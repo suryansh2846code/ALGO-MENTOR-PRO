@@ -38,7 +38,8 @@ const EXAMPLES = [
 
 export default function App() {
   const [input, setInput] = useState('');
-  const [response, setResponse] = useState<string | null>(null);
+  const [response, setResponse] = useState<string | null>("### Approach\nSome explanation here\n\n### Code\n```cpp\nint main(){}\n```\n\n### Complexity\nTime: O(n)");
+  const [activeTab, setActiveTab] = useState<"approach" | "code" | "complexity">("approach");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -80,6 +81,35 @@ export default function App() {
     setResponse(item.response);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  const getSection = (section: "approach" | "code" | "complexity") => {
+  if (!response) return "";
+
+  const lower = response.toLowerCase();
+
+  const approachStart = lower.indexOf("### approach");
+  const codeStart = lower.indexOf("### code");
+  const complexityStart = lower.indexOf("### complexity");
+
+  if (section === "approach") {
+    return response.slice(
+      approachStart,
+      codeStart !== -1 ? codeStart : response.length
+    );
+  }
+
+  if (section === "code") {
+    return response.slice(
+      codeStart,
+      complexityStart !== -1 ? complexityStart : response.length
+    );
+  }
+
+  if (section === "complexity") {
+    return response.slice(complexityStart);
+  }
+
+  return response;
+};
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#1a1a1a] font-sans selection:bg-indigo-100 selection:text-indigo-900">
@@ -106,7 +136,7 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column: Input & Examples */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 self-start">
             <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
               <div className="flex items-center gap-2 text-gray-900 font-medium">
                 <Terminal className="w-4 h-4 text-indigo-600" />
@@ -204,8 +234,12 @@ export default function App() {
 
           {/* Right Column: Response */}
           <div className="lg:col-span-7">
+            <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+  <BrainCircuit className="w-4 h-4 text-indigo-600" />
+  AI Mentor Output
+</h2>
             {!response && !isLoading && !error && (
-              <div className="h-full flex flex-col items-center justify-center text-center p-12 bg-white/40 rounded-3xl border-2 border-dashed border-gray-200">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm h-full flex flex-col items-center justify-center text-center p-12">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                   <BrainCircuit className="w-8 h-8 text-gray-300" />
                 </div>
@@ -238,7 +272,7 @@ export default function App() {
 
             {response && (
               <div ref={responseRef} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 sticky top-0 z-10">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mentor Analysis</span>
                   <button
                     onClick={handleCopy}
@@ -248,7 +282,26 @@ export default function App() {
                     {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
-                <div className="p-6 md:p-8 overflow-y-auto max-h-[calc(100vh-16rem)]">
+                
+
+{/* Tabs */}
+<div className="flex border-b border-gray-100 bg-white">
+  {(["approach", "code", "complexity"] as const).map((tab) => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={`px-6 py-3 text-sm font-medium capitalize transition-all ${
+        activeTab === tab
+          ? "text-indigo-600 border-b-2 border-indigo-600"
+          : "text-gray-400 hover:text-gray-600"
+      }`}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
+
+<div className="p-6 md:p-8 overflow-y-auto max-h-[calc(100vh-16rem)]">
                   <div className="prose prose-indigo prose-sm max-w-none 
                     prose-headings:font-semibold prose-headings:tracking-tight
                     prose-h2:text-xl prose-h2:border-b prose-h2:pb-2 prose-h2:mt-8
@@ -256,7 +309,9 @@ export default function App() {
                     prose-pre:bg-[#1e1e1e] prose-pre:text-gray-100 prose-pre:rounded-xl prose-pre:p-4
                     prose-ul:list-disc prose-ol:list-decimal
                     text-gray-700 leading-relaxed">
-                    <ReactMarkdown>{response}</ReactMarkdown>
+                    <ReactMarkdown>
+  {getSection(activeTab)}
+</ReactMarkdown>
                   </div>
                 </div>
               </div>
